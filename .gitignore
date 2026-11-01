@@ -1,0 +1,7 @@
+# Your own tasks never get committed - only the code, starter file and screenshots do.
+data/
+
+# Python and macOS clutter
+__pycache__/
+*.pyc
+.DS_Store
