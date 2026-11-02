@@ -34,7 +34,7 @@ def parse_tags(text):
     for tag in re.findall(r"\{([^}]*)\}", text):
         t = tag.strip()
         if t.lower().startswith("star"):
-            # {star YYYY-MM-DD}: starred for that day only
+            # {star YYYY-MM-DD}: starred (the date is when) - stays until un-starred
             try:
                 meta["star"] = dt.date.fromisoformat(t.split()[1])
             except (IndexError, ValueError):
@@ -379,9 +379,8 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
   .viz-root{padding:16px 12px 48px}
   .step{width:112px}
 }
-/* Today stars: star what you want done today. A star is
-   {star YYYY-MM-DD} on the line and only counts on that date, so yesterday's stars
-   clear themselves - nothing to go back and un-star. */
+/* Stars: star what you want done today. A star is {star YYYY-MM-DD} on the
+   line and stays until you click it off. */
 .sticky{position:relative}
 .sticky .st-title{padding-right:48px}
 .star{position:absolute;top:3px;right:30px;border:none;background:none;cursor:pointer;
@@ -735,10 +734,10 @@ def render(tasks, projects, interactive, server=False):
         # own file and its place is set there.
         drag = (f" draggable='true' data-raw='{esc(t.get('raw'))}'"
                 if server and t.get("src") == "tasks.md" else "")
-        on = t.get("star") == TODAY
+        on = t.get("star") is not None
         if server and t.get("src"):
             star = (f"<button class='star{' on' if on else ''}' aria-pressed='{str(on).lower()}' "
-                    f"title='{'Unstar' if on else 'Star for today'}' "
+                    f"title='{'Unstar' if on else 'Star'}' "
                     f"data-file='{esc(t.get('src'))}' data-raw='{esc(t.get('raw'))}'>"
                     f"{'★' if on else '☆'}</button>")
         else:
@@ -763,10 +762,10 @@ def render(tasks, projects, interactive, server=False):
     # Today strip: copies of the starred stickies, without data-row so the filters
     # and counts below still see each task once.
     # The starred row is always there, even before anything is starred.
-    starred = [r for r in rows if r[2].get("star") == TODAY]
+    starred = [r for r in rows if r[2].get("star") is not None]
     mins = sum(r[2].get("est") or 30 for r in starred)
     cnt = f"{len(starred)} · {fmt_est(mins)}" if starred else "0"
-    w("<div class='today'><div class='today-head'>★ Starred for today"
+    w("<div class='today'><div class='today-head'>★ Starred"
       f"<span class='cnt'>{cnt}</span></div>")
     if starred:
         w("<div class='swim-grid'>")
@@ -775,7 +774,7 @@ def render(tasks, projects, interactive, server=False):
         w("</div>")
     else:
         w("<p class='today-empty'>Nothing starred yet. Click the ☆ on any task to pin it here "
-          "for today. Stars clear themselves tomorrow.</p>")
+          "It stays until you click it off.</p>")
     w("</div>")
 
     w("<div class='board' id='taskgrid'>")

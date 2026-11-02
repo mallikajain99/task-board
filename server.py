@@ -91,8 +91,8 @@ def toggle(rel_file, raw, done):
 
 
 def star(rel_file, raw):
-    """Toggle today's star on one open task line: adds {star YYYY-MM-DD}, or removes it.
-    Any older star on the line is dropped either way ."""
+    """Toggle the star on one open task line: adds {star YYYY-MM-DD}, or removes it.
+    A star stays until clicked off."""
     import datetime
     path = os.path.realpath(os.path.join(ROOT, rel_file))
     if not path.startswith(os.path.realpath(ROOT) + os.sep):
@@ -105,7 +105,7 @@ def star(rel_file, raw):
     m = pat.search(text)
     if not m:
         raise ValueError("could not find that line — regenerate and retry")
-    was_on = ("{star %s}" % today) in raw
+    was_on = re.search(r"\{star[^}]*\}", raw) is not None
     base = re.sub(r"\s*\{star[^}]*\}", "", raw).rstrip()
     new_raw = base if was_on else base + " {star %s}" % today
     text = text[:m.start()] + "%s- [ ] %s" % (m.group(1), new_raw) + text[m.end():]

@@ -35,7 +35,7 @@ example task to delete.
 |---|---|
 | **Add a task** | Type in the dashed box at the end of any lane and press Enter, or use the bar at the bottom (area, time estimate, due date, weekly repeat) |
 | **Tick it off** | Checkbox. Ticked tasks move to a collapsible *Done* list, where you can untick them |
-| **Star for today** | ☆ pins a task to the *Starred for today* row, with a running total of time. Stars expire at midnight on their own |
+| **Star** | ☆ pins a task to the *Starred* row, with a running total of time. A star stays until you click it off |
 | **Edit** | ✎ to change the wording, time, due date or repeat |
 | **Delete** | ✕ asks first, then keeps a copy in `data/archive/deleted-tasks.md` so nothing is lost |
 | **Reorder or re-file** | Drag a task within a lane, or into another lane |
@@ -63,7 +63,7 @@ You never have to touch the files, but they're plain markdown if you want to.
 | `{30m}` `{1h}` `{1h30}` | time estimate |
 | `{due 2026-12-01}` | due date (drives the overdue and due-soon flags) |
 | `{every Fri}` | repeats weekly |
-| `{star 2026-11-01}` | starred for that day only |
+| `{star 2026-11-01}` | starred (the date is when); stays until un-starred |
 | `{ongoing}` or `{ongoing 3/12}` | a project step you chip away at, with optional progress |
 
 **`data/projects/<name>.md`**: one file per project. Steps are the `- [ ]` lines under `## Steps`.
