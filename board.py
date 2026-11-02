@@ -400,7 +400,9 @@ span.star{cursor:default}
 #donetoast{position:fixed;left:50%;top:18px;transform:translate(-50%,-20px);opacity:0;
   pointer-events:none;transition:opacity .2s,transform .2s;z-index:2147483000;display:flex;gap:6px;
   align-items:center;background:#22201d;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;
-  box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:14px;max-width:min(92vw,640px)}
+  box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:14px;max-width:min(92vw,640px);
+  /* it lives outside <body>, so it must be given the page font itself */
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.4;-webkit-font-smoothing:antialiased}
 #donetoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 #donetoast .tm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px}
 #donetoast button{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:6px;padding:5px 10px;
