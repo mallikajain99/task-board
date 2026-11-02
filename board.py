@@ -247,7 +247,7 @@ CSS = """
 /* an author display rule beats the hidden attribute's UA display:none,
    so .board[hidden] stayed on screen - this makes hidden actually hide */
 [hidden]{display:none!important}
-html,body{max-width:100%;overflow-x:hidden}
+html,body{max-width:100%;overflow-x:clip}
 .viz-root{
   --surface-1:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink-2:#52514e;
   --muted:#898781; --grid:#e1e0d9; --rule:#c3c2b7; --border:rgba(11,11,11,.10);
@@ -396,8 +396,9 @@ span.star{cursor:default}
 .today-head .cnt{font-weight:400;margin-left:6px;opacity:.75}
 .today-empty{margin:0;font-size:13px;color:#7a5600}
 .sticky.leaving{opacity:0;transform:scale(.96);transition:opacity .25s,transform .25s}
-#donetoast{position:fixed;left:50%;bottom:78px;transform:translate(-50%,20px);opacity:0;
-  pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;display:flex;gap:6px;
+/* Floating overlay at the top of the screen, always visible whatever the scroll position. */
+#donetoast{position:fixed;left:50%;top:18px;transform:translate(-50%,-20px);opacity:0;
+  pointer-events:none;transition:opacity .2s,transform .2s;z-index:2147483000;display:flex;gap:6px;
   align-items:center;background:#22201d;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;
   box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:14px;max-width:min(92vw,640px)}
 #donetoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
@@ -1167,7 +1168,9 @@ document.addEventListener('click',function(e){
 var toastTimer=null;
 function toast(title,file,raw){
   var t=document.getElementById('donetoast');
-  if(!t){t=document.createElement('div');t.id='donetoast';document.body.appendChild(t);}
+  // attached to <html>, not <body>, so no page-level scrolling setting can pull it off screen
+  if(!t){t=document.createElement('div');t.id='donetoast';t.setAttribute('role','status');
+         document.documentElement.appendChild(t);}
   t.innerHTML='';
   var m=document.createElement('span'); m.className='tm';
   m.textContent='Moved to Done: '+title; t.appendChild(m);
