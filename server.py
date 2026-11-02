@@ -18,12 +18,16 @@ import os
 import re
 import shutil
 import sys
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.environ.get("TASKBOARD_DATA") or os.path.join(HERE, "data"))
 PORT = int(os.environ.get("TASKBOARD_PORT", "8765"))
 sys.dont_write_bytecode = True
+# Requests run in parallel (a browser's idle spare connection would otherwise stall
+# every click); writes still go one at a time through this lock.
+WRITE_LOCK = threading.Lock()
 
 
 def first_run():
@@ -396,7 +400,9 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
             if n > 100000:
                 raise ValueError("request too large")
-            result = fn(json.loads(self.rfile.read(n) or b"{}"))
+            body = json.loads(self.rfile.read(n) or b"{}")
+            with WRITE_LOCK:
+                result = fn(body)
         except Exception as e:
             return self._send(400, str(e))
         print("  %s %s" % (self.path, str(result)[:70]))
@@ -407,7 +413,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    srv = HTTPServer(("127.0.0.1", PORT), Handler)
+    srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    srv.daemon_threads = True
     print("Task Board on http://127.0.0.1:%d  (data: %s)" % (PORT, ROOT))
     print("Ctrl-C to stop.")
     try:

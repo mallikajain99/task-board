@@ -395,6 +395,16 @@ span.star{cursor:default}
 .today-head{font-weight:700;font-size:14px;margin:0 0 10px;color:#7a5600}
 .today-head .cnt{font-weight:400;margin-left:6px;opacity:.75}
 .today-empty{margin:0;font-size:13px;color:#7a5600}
+.sticky.leaving{opacity:0;transform:scale(.96);transition:opacity .25s,transform .25s}
+#donetoast{position:fixed;left:50%;bottom:78px;transform:translate(-50%,20px);opacity:0;
+  pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;display:flex;gap:6px;
+  align-items:center;background:#22201d;color:#fff;border-radius:10px;padding:10px 12px 10px 16px;
+  box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:14px;max-width:min(92vw,640px)}
+#donetoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#donetoast .tm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px}
+#donetoast button{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:6px;padding:5px 10px;
+  background:rgba(255,255,255,.14);color:#fff;cursor:pointer}
+#donetoast button:hover{background:rgba(255,255,255,.26)}
 /* edit / delete / reorder controls */
 .acts{margin-left:auto;display:inline-flex;gap:2px;opacity:.35;transition:opacity .15s}
 .sticky:hover .acts,.step:hover .acts,.doneitem:hover .acts{opacity:1}
@@ -1153,16 +1163,60 @@ document.addEventListener('click',function(e){
      r.text().then(function(t){alert('Could not save: '+t);}); s.disabled=false; } })
    .catch(function(){alert('Server not reachable.');s.disabled=false;});
 },true);
+// A ticked task moves out of the way immediately; a popup offers Undo and Edit for 45 seconds.
+var toastTimer=null;
+function toast(title,file,raw){
+  var t=document.getElementById('donetoast');
+  if(!t){t=document.createElement('div');t.id='donetoast';document.body.appendChild(t);}
+  t.innerHTML='';
+  var m=document.createElement('span'); m.className='tm';
+  m.textContent='Moved to Done: '+title; t.appendChild(m);
+  [['Undo',function(){
+      fetch('/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({file:file,raw:raw,done:false})}).then(function(){location.reload();});}],
+   ['Edit',function(){
+      var n=prompt('Edit the task. Keep or change the tags:\\n{30m} or {1h} = time · {due 2026-11-15} = due date · {every Fri} = repeats weekly',raw);
+      if(n===null||n.trim()===raw.trim()) return;
+      post('/edit',{file:file,raw:raw,text:n});}],
+   ['✕',function(){t.classList.remove('show');}]].forEach(function(b){
+    var x=document.createElement('button'); x.textContent=b[0]; x.onclick=b[1]; t.appendChild(x);});
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},45000);
+}
 document.addEventListener('change',function(e){
   var c=e.target;
   if(c.type!=='checkbox'||!c.dataset.file) return;
-  c.disabled=true;
+  var file=c.dataset.file, raw=c.dataset.raw, done=c.checked;
+  if(!done){   // unticking (Done list or a project step): save and reload as before
+    c.disabled=true;
+    fetch('/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({file:file,raw:raw,done:false})})
+     .then(function(r){ if(r.ok){location.reload();} else {
+       r.text().then(function(t){alert('Could not save: '+t);}); c.checked=true; c.disabled=false; } })
+     .catch(function(){alert('Server not reachable.');c.checked=true;c.disabled=false;});
+    return;
+  }
+  // Ticking: move it out of the way first, then save in the background.
+  var sel='input[type=checkbox][data-file="'+CSS.escape(file)+'"][data-raw="'+CSS.escape(raw)+'"]';
+  var cards=[], steps=[];
+  document.querySelectorAll(sel).forEach(function(x){
+    x.checked=true;
+    var s=x.closest('.sticky'); if(s){cards.push(s);return;}
+    var p=x.closest('.step'); if(p) steps.push(p);
+  });
+  cards.forEach(function(s){s.classList.add('leaving');setTimeout(function(){s.style.display='none';},250);});
+  steps.forEach(function(p){p.classList.remove('now');p.classList.add('done');});
+  var title=raw.replace(/\\s*\\{[^}]*\\}/g,'');
   fetch('/toggle',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({file:c.dataset.file,raw:c.dataset.raw,done:c.checked})})
-   .then(function(r){ if(r.ok){location.reload();} else {
+    body:JSON.stringify({file:file,raw:raw,done:true})})
+   .then(function(r){ if(r.ok){ toast(title,file,raw); } else {
      r.text().then(function(t){alert('Could not save: '+t);});
-     c.checked=!c.checked; c.disabled=false; } })
-   .catch(function(){alert('Server not reachable.');c.checked=!c.checked;c.disabled=false;});
+     cards.forEach(function(s){s.style.display='';s.classList.remove('leaving');});
+     steps.forEach(function(p){p.classList.remove('done');});
+     document.querySelectorAll(sel).forEach(function(x){x.checked=false;}); } })
+   .catch(function(){alert('Server not reachable.');
+     cards.forEach(function(s){s.style.display='';s.classList.remove('leaving');});
+     document.querySelectorAll(sel).forEach(function(x){x.checked=false;});});
 });
 </script>""")
     w("</div></body></html>")
